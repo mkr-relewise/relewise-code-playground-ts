@@ -1,5 +1,11 @@
 import { useMemo, useState } from 'react';
-import { runSearchTermPrediction } from './search-term-prediction';
+import { runProductSearch } from './examples/product-search';
+import { runSearchTermPrediction } from './examples/search-term-prediction';
+
+const EXAMPLE_OPTIONS = [
+  { id: 'search-term-prediction', label: 'Search Term Prediction' },
+  { id: 'product-search', label: 'Product Search' },
+];
 
 function resolveExampleId() {
   const params = new URLSearchParams(window.location.search);
@@ -21,7 +27,13 @@ function resolveExampleId() {
 }
 
 function App() {
-  const exampleId = useMemo(() => resolveExampleId(), []);
+  const exampleId = useMemo(() => {
+    const resolved = resolveExampleId();
+    return EXAMPLE_OPTIONS.some((opt) => opt.id === resolved)
+      ? resolved
+      : 'search-term-prediction';
+  }, []);
+  const [selectedExample, setSelectedExample] = useState(exampleId);
   const [datasetId, setDatasetId] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [serverUrl, setServerUrl] = useState('');
@@ -44,11 +56,11 @@ function App() {
     };
 
     try {
-      await runSearchTermPrediction({
-        datasetId,
-        apiKey,
-        serverUrl,
-      });
+      if (selectedExample === 'product-search') {
+        await runProductSearch({ datasetId, apiKey, serverUrl });
+      } else {
+        await runSearchTermPrediction({ datasetId, apiKey, serverUrl });
+      }
     } catch (error) {
       logs.push(
         `Error: ${error instanceof Error ? error.message : String(error)}`
@@ -60,21 +72,30 @@ function App() {
     setIsRunning(false);
   };
 
-  if (exampleId !== 'search-term-prediction') {
-    return (
-      <div style={{ padding: '10px' }}>
-        <h2>Example Not Found</h2>
-        <p style={{ marginBottom: '12px' }}>
-          No example registered for "{exampleId}". Try adding
-          &example=search-term-prediction to the URL.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div style={{ padding: '10px' }}>
-      <h2>Search Term Prediction</h2>
+      <div style={{ marginBottom: '16px', display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <label htmlFor="example" style={{ fontWeight: 600, fontSize: '14px' }}>
+          Example
+        </label>
+        <select
+          id="example"
+          value={selectedExample}
+          onChange={(e) => setSelectedExample(e.target.value)}
+          style={{ padding: '6px 8px', fontSize: '14px' }}
+        >
+          {EXAMPLE_OPTIONS.map((opt) => (
+            <option key={opt.id} value={opt.id}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <h2>
+        {EXAMPLE_OPTIONS.find((opt) => opt.id === selectedExample)?.label ??
+          'Search Term Prediction'}
+      </h2>
 
       <div style={{ marginBottom: '20px' }}>
         <div style={{ marginBottom: '12px' }}>
@@ -190,7 +211,7 @@ function App() {
       >
         {output.length > 0
           ? output.join('\n')
-          : 'Click "Run" to execute search term prediction'}
+          : 'Click "Run" to execute the selected example'}
       </pre>
     </div>
   );
