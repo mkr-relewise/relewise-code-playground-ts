@@ -1,7 +1,27 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { runSearchTermPrediction } from './search-term-prediction';
 
+function resolveExampleId() {
+  const params = new URLSearchParams(window.location.search);
+
+  // Explicit example param takes priority: ?example=search-term-prediction
+  const exampleParam = params.get('example');
+  if (exampleParam) return exampleParam;
+
+  // Fallback: derive from the StackBlitz file param: ?file=src%2Fsearch-term-prediction.ts
+  const fileParam = params.get('file');
+  if (fileParam) {
+    const decoded = fileParam.split('/').pop();
+    if (decoded) {
+      return decoded.replace(/\.[^.]+$/, '');
+    }
+  }
+
+  return 'search-term-prediction';
+}
+
 function App() {
+  const exampleId = useMemo(() => resolveExampleId(), []);
   const [datasetId, setDatasetId] = useState('');
   const [apiKey, setApiKey] = useState('');
   const [serverUrl, setServerUrl] = useState('');
@@ -39,6 +59,18 @@ function App() {
     setOutput(logs);
     setIsRunning(false);
   };
+
+  if (exampleId !== 'search-term-prediction') {
+    return (
+      <div style={{ padding: '10px' }}>
+        <h2>Example Not Found</h2>
+        <p style={{ marginBottom: '12px' }}>
+          No example registered for "{exampleId}". Try adding
+          &example=search-term-prediction to the URL.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div style={{ padding: '10px' }}>
